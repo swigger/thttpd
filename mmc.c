@@ -112,12 +112,14 @@ static unsigned int hash( ino_t ino, dev_t dev, off_t size, time_t ct );
 
 
 void*
-mmc_map( char* filename, struct stat* sbP, struct timeval* nowP )
+mmc_map( char* filename0, struct stat* sbP, struct timeval* nowP )
     {
     time_t now;
     struct stat sb;
     Map* m;
     int fd;
+	char filename[400];
+   	thttpd_find_file(filename, filename0);
 
     /* Stat the file, if necessary. */
     if ( sbP != (struct stat*) 0 )

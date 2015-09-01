@@ -73,6 +73,7 @@ static char* argv0;
 static int debug;
 static unsigned short port;
 static char* dir;
+static char * altdirs[1024], **paltdirs = altdirs;
 static char* data_dir;
 static int do_chroot, no_log, no_symlink_check, do_vhost, do_global_passwd;
 static char* cgi_pattern;
@@ -977,6 +978,11 @@ parse_args( int argc, char** argv )
 	    }
 	else if ( strcmp( argv[argn], "-D" ) == 0 )
 	    debug = 1;
+	else if (strcmp(argv[argn], "-A")==0 && argn+1<argc)
+	{
+		++argn;
+		* paltdirs++ = argv[argn];
+	}
 	else
 	    usage();
 	++argn;
@@ -990,7 +996,7 @@ static void
 usage( void )
     {
     (void) fprintf( stderr,
-"usage:  %s [-C configfile] [-p port] [-d dir] [-r|-nor] [-dd data_dir] [-s|-nos] [-v|-nov] [-g|-nog] [-u user] [-c cgipat] [-t throttles] [-h host] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-V] [-D]\n",
+"usage:  %s [-C configfile] [-p port] [-d dir] [-A altdir] [-r|-nor] [-dd data_dir] [-s|-nos] [-v|-nov] [-g|-nog] [-u user] [-c cgipat] [-t throttles] [-h host] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-V] [-D]\n",
 	argv0 );
     exit( 1 );
     }
@@ -1041,6 +1047,11 @@ read_config( char* filename )
 		{
 		no_value_required( name, value );
 		debug = 1;
+		}
+		else if (strcasecmp(name, "altdir")==0)
+		{
+			value_required(name, value);
+			*paltdirs++ = e_strdup(value);
 		}
 	    else if ( strcasecmp( name, "port" ) == 0 )
 		{
@@ -2179,3 +2190,18 @@ thttpd_logstats( long secs )
     stats_bytes = 0;
     stats_simultaneous = 0;
     }
+
+void thttpd_find_file(char * ofn, char * fn)
+{
+	struct stat st;
+	char ** ptr;
+	for (ptr=paltdirs; ptr>altdirs; --ptr)
+	{
+		size_t len = strlen(ptr[-1]);
+		char ch = len ? ptr[-1][len-1] : 0;
+		sprintf(ofn, "%s%s%s", ptr[-1], ch=='/' ? "" : "/", fn);
+		if (stat(fn, &st)==0)
+			return ;
+	}
+	strcpy(ofn, fn);
+}
