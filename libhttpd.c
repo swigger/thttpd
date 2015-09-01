@@ -1,6 +1,6 @@
 /* libhttpd.c - HTTP protocol library
 **
-** Copyright © 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
+** Copyright ï¿½ 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -147,7 +147,7 @@ static int tilde_map_1( httpd_conn* hc );
 static int tilde_map_2( httpd_conn* hc );
 #endif /* TILDE_MAP_2 */
 static int vhost_map( httpd_conn* hc );
-static char* expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped );
+char* expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped );
 static char* bufgets( httpd_conn* hc );
 static void de_dotdot( char* file );
 static void init_mime( void );
@@ -1449,7 +1449,7 @@ vhost_map( httpd_conn* hc )
 ** This is a fairly nice little routine.  It handles any size filenames
 ** without excessive mallocs.
 */
-static char*
+char*
 expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped )
     {
     static char* checked;
@@ -1461,11 +1461,8 @@ expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped
     char* r;
     char* cp1;
     char* cp2;
-	char found_fn[1000];
-	int iff;
 
-	iff = thttpd_find_file(found_fn, path);
-    if ( no_symlink_check || iff)
+    if ( no_symlink_check )
 	{
 	/* If we are chrooted, we can actually skip the symlink-expansion,
 	** since it's impossible to get out of the tree.  However, we still
@@ -1480,7 +1477,7 @@ expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped
 	** URL for the CGI instead of a local symlinked one.
 	*/
 	struct stat sb;
-	if ( stat( iff ? found_fn : path, &sb ) != -1 )
+	if ( stat( path, &sb ) != -1 )
 	    {
 	    checkedlen = strlen( path );
 	    httpd_realloc_str( &checked, &maxchecked, checkedlen );
@@ -1629,7 +1626,7 @@ expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped
 	/* Insert the link contents in front of the rest of the filename. */
 	if ( restlen != 0 )
 	    {
-	    (void) strcpy( rest, r );
+	    (void) memmove( rest, r , strlen(r)+1 );
 	    httpd_realloc_str( &rest, &maxrest, restlen + linklen + 1 );
 	    for ( i = restlen; i >= 0; --i )
 		rest[i + linklen + 1] = rest[i];
@@ -1961,6 +1958,9 @@ httpd_parse_request( httpd_conn* hc )
     char* eol;
     char* cp;
     char* pi;
+		char temp[1000];
+		int i = -1;
+		char * altdir = 0;
 
     hc->checked_idx = 0;	/* reset */
     method_str = bufgets( hc );
@@ -2329,11 +2329,21 @@ httpd_parse_request( httpd_conn* hc )
     /* Expand all symbolic links in the filename.  This also gives us
     ** any trailing non-existing components, for pathinfo.
     */
-    cp = expand_symlinks( hc->expnfilename, &pi, hc->hs->no_symlink_check, hc->tildemapped );
-    if ( cp == (char*) 0 )
 	{
-	httpd_send_err( hc, 500, err500title, "", err500form, hc->encodedurl );
-	return -1;
+		while (get_altdir(&i, &altdir))
+		{
+			sprintf(temp, "%s/%s", altdir, hc->expnfilename);
+			cp = expand_symlinks(temp, &pi, hc->hs->no_symlink_check, 1);
+			if (cp && pi[0]==0) goto found_file;
+		}
+
+		cp = expand_symlinks( hc->expnfilename, &pi, hc->hs->no_symlink_check, hc->tildemapped );
+		if ( cp == (char*) 0 )
+		{
+			httpd_send_err( hc, 500, err500title, "", err500form, hc->encodedurl );
+			return -1;
+		}
+	found_file:;
 	}
     httpd_realloc_str( &hc->expnfilename, &hc->maxexpnfilename, strlen( cp ) );
     (void) strcpy( hc->expnfilename, cp );
@@ -2372,6 +2382,15 @@ httpd_parse_request( httpd_conn* hc )
 #endif /* TILDE_MAP_2 */
 	else
 	    {
+			for (i=-1; get_altdir(&i, &altdir); )
+			{
+				int alen = (int) strlen(altdir);
+				if (strncmp(hc->expnfilename, altdir, alen) == 0 &&
+					(hc->expnfilename[alen]==0 || hc->expnfilename[alen]=='/') )
+					return 0;
+			}
+			
+			
 	    syslog(
 		LOG_NOTICE, "%.80s URL \"%.80s\" goes outside the web tree",
 		httpd_ntoa( &hc->client_addr ), hc->encodedurl );
@@ -4125,7 +4144,7 @@ httpd_ntoa( httpd_sockaddr* saP )
 	}
     else if ( IN6_IS_ADDR_V4MAPPED( &saP->sa_in6.sin6_addr ) && strncmp( str, "::ffff:", 7 ) == 0 )
 	/* Elide IPv6ish prefix for IPv4 addresses. */
-	(void) memmove( str, &str[7], strlen(str)+1-7 );
+	(void) memmove( str, &str[7], strlen(&str[7])+1 );
 
     return str;
 

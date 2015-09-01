@@ -1,6 +1,6 @@
 /* thttpd.c - tiny/turbo/throttling HTTP server
 **
-** Copyright © 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
+** Copyright ï¿½ 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,7 @@ static char* argv0;
 static int debug;
 static unsigned short port;
 static char* dir;
-static char * altdirs[1024], **paltdirs = altdirs;
+static char * altdirs[100], **paltdirs=altdirs;
 static char* data_dir;
 static int do_chroot, no_log, no_symlink_check, do_vhost, do_global_passwd;
 static char* cgi_pattern;
@@ -170,7 +170,7 @@ static void show_stats( ClientData client_data, struct timeval* nowP );
 #endif /* STATS_TIME */
 static void logstats( struct timeval* nowP );
 static void thttpd_logstats( long secs );
-
+static void add_altdir(const char * dir);
 
 /* SIGTERM and SIGINT say to exit immediately. */
 static void
@@ -981,7 +981,7 @@ parse_args( int argc, char** argv )
 	else if (strcmp(argv[argn], "-A")==0 && argn+1<argc)
 	{
 		++argn;
-		* paltdirs++ = argv[argn];
+		add_altdir(argv[argn]);
 	}
 	else
 	    usage();
@@ -1051,7 +1051,7 @@ read_config( char* filename )
 		else if (strcasecmp(name, "altdir")==0)
 		{
 			value_required(name, value);
-			*paltdirs++ = e_strdup(value);
+			add_altdir(value);
 		}
 	    else if ( strcasecmp( name, "port" ) == 0 )
 		{
@@ -2191,18 +2191,40 @@ thttpd_logstats( long secs )
     stats_simultaneous = 0;
     }
 
-int thttpd_find_file(char * ofn, char * fn)
+char* expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped );
+
+static void add_altdir(const char * dir)
 {
-	struct stat st;
-	char ** ptr;
-	for (ptr=paltdirs; ptr>altdirs; --ptr)
+	char path[2000] = {0};
+	size_t len;
+	char * rp = 0, *o = 0;
+	
+	if (strlen(dir) > 400) abort();
+	if (dir[0] != '/')
 	{
-		size_t len = strlen(ptr[-1]);
-		char ch = len ? ptr[-1][len-1] : 0;
-		sprintf(ofn, "%s%s%s", ptr[-1], ch=='/' ? "" : "/", fn);
-		if (stat(ofn, &st)==0)
-			return 1;
+		getcwd(path, sizeof(path));
+		len = strlen(path);
+		if (path[len-1] != '/')
+			path[len] = '/';
+		strcat(path, dir);
 	}
-	strcpy(ofn, fn);
-	return 0;
+	else
+	{
+		strcpy(path, dir);
+	}
+	
+	o = expand_symlinks(path, &rp, 0, 1);
+	*paltdirs++ = e_strdup(o);
+}
+
+int get_altdir(int * i, char ** os)
+{
+	int alln = (int)(paltdirs - altdirs);
+	if (*i<0 || *i>=alln)
+		*i = alln-1;
+	else
+		-- *i;
+	if (*i < 0) return 0;
+	*os = altdirs[*i];
+	return 1;
 }

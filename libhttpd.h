@@ -282,6 +282,4 @@ int httpd_write_fully( int fd, const char* buf, size_t nbytes );
 /* Generate debugging statistics syslog message. */
 void httpd_logstats( long secs );
 
-int thttpd_find_file(char * ofn, char * fn);
-
 #endif /* _LIBHTTPD_H_ */

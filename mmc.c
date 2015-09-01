@@ -1,6 +1,6 @@
 /* mmc.c - mmap cache
 **
-** Copyright © 1998,2001,2014 by Jef Poskanzer <jef@mail.acme.com>.
+** Copyright ï¿½ 1998,2001,2014 by Jef Poskanzer <jef@mail.acme.com>.
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -103,7 +103,7 @@ static off_t mapped_bytes = 0;
 
 
 /* Forwards. */
-static void panic( void );
+static void mmc_panic( void );
 static void really_unmap( Map** mm );
 static int check_hash_size( void );
 static int add_hash( Map* m );
@@ -112,14 +112,12 @@ static unsigned int hash( ino_t ino, dev_t dev, off_t size, time_t ct );
 
 
 void*
-mmc_map( char* filename0, struct stat* sbP, struct timeval* nowP )
+mmc_map( char* filename, struct stat* sbP, struct timeval* nowP )
     {
     time_t now;
     struct stat sb;
     Map* m;
     int fd;
-	char filename[400];
-   	thttpd_find_file(filename, filename0);
 
     /* Stat the file, if necessary. */
     if ( sbP != (struct stat*) 0 )
@@ -205,7 +203,7 @@ mmc_map( char* filename0, struct stat* sbP, struct timeval* nowP )
 	    /* Ooo, out of address space.  Free all unreferenced maps
 	    ** and try again.
 	    */
-	    panic();
+	    mmc_panic();
 	    m->addr = mmap( 0, size_size, PROT_READ, MAP_PRIVATE, fd, 0 );
 	    }
 	if ( m->addr == (void*) -1 )
@@ -224,7 +222,7 @@ mmc_map( char* filename0, struct stat* sbP, struct timeval* nowP )
 	    /* Ooo, out of memory.  Free all unreferenced maps
 	    ** and try again.
 	    */
-	    panic();
+	    mmc_panic();
 	    m->addr = (void*) malloc( size_size );
 	    }
 	if ( m->addr == (void*) 0 )
@@ -347,7 +345,7 @@ mmc_cleanup( struct timeval* nowP )
 
 
 static void
-panic( void )
+mmc_panic( void )
     {
     Map** mm;
     Map* m;
