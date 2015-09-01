@@ -2191,7 +2191,7 @@ thttpd_logstats( long secs )
     stats_simultaneous = 0;
     }
 
-void thttpd_find_file(char * ofn, char * fn)
+int thttpd_find_file(char * ofn, char * fn)
 {
 	struct stat st;
 	char ** ptr;
@@ -2201,7 +2201,8 @@ void thttpd_find_file(char * ofn, char * fn)
 		char ch = len ? ptr[-1][len-1] : 0;
 		sprintf(ofn, "%s%s%s", ptr[-1], ch=='/' ? "" : "/", fn);
 		if (stat(ofn, &st)==0)
-			return ;
+			return 1;
 	}
 	strcpy(ofn, fn);
+	return 0;
 }

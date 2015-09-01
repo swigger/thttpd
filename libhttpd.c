@@ -1461,8 +1461,11 @@ expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped
     char* r;
     char* cp1;
     char* cp2;
+	char found_fn[1000];
+	int iff;
 
-    if ( no_symlink_check )
+	iff = thttpd_find_file(found_fn, path);
+    if ( no_symlink_check || iff)
 	{
 	/* If we are chrooted, we can actually skip the symlink-expansion,
 	** since it's impossible to get out of the tree.  However, we still
@@ -1477,7 +1480,7 @@ expand_symlinks( char* path, char** restP, int no_symlink_check, int tildemapped
 	** URL for the CGI instead of a local symlinked one.
 	*/
 	struct stat sb;
-	if ( stat( path, &sb ) != -1 )
+	if ( stat( iff ? found_fn : path, &sb ) != -1 )
 	    {
 	    checkedlen = strlen( path );
 	    httpd_realloc_str( &checked, &maxchecked, checkedlen );
