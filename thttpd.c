@@ -2200,7 +2200,7 @@ void thttpd_find_file(char * ofn, char * fn)
 		size_t len = strlen(ptr[-1]);
 		char ch = len ? ptr[-1][len-1] : 0;
 		sprintf(ofn, "%s%s%s", ptr[-1], ch=='/' ? "" : "/", fn);
-		if (stat(fn, &st)==0)
+		if (stat(ofn, &st)==0)
 			return ;
 	}
 	strcpy(ofn, fn);
