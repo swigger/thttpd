@@ -36,3 +36,4 @@ strerror(errnum)
 	(void)sprintf(ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 }
+//test.
