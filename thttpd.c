@@ -81,7 +81,7 @@ static int cgi_limit;
 static char* url_pattern;
 static int no_empty_referrers;
 static char* local_pattern;
-static char* logfile;
+static char* logfile = "-";
 static char* throttlefile;
 static char* hostname;
 static char* pidfile;
@@ -839,7 +839,7 @@ parse_args( int argc, char** argv )
     {
     int argn;
 
-    debug = 0;
+    debug = 1;
     port = DEFAULT_PORT;
     dir = (char*) 0;
     data_dir = (char*) 0;
@@ -978,6 +978,8 @@ parse_args( int argc, char** argv )
 	    }
 	else if ( strcmp( argv[argn], "-D" ) == 0 )
 	    debug = 1;
+	else if ( strcmp( argv[argn], "-noD" ) == 0 )
+		debug = 0;
 	else if (strcmp(argv[argn], "-A")==0 && argn+1<argc)
 	{
 		++argn;
@@ -996,7 +998,7 @@ static void
 usage( void )
     {
     (void) fprintf( stderr,
-"usage:  %s [-C configfile] [-p port] [-d dir] [-A altdir] [-r|-nor] [-dd data_dir] [-s|-nos] [-v|-nov] [-g|-nog] [-u user] [-c cgipat] [-t throttles] [-h host] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-V] [-D]\n",
+"usage:  %s [-C configfile] [-p port] [-d dir] [-A altdir] [-r|-nor] [-dd data_dir] [-s|-nos] [-v|-nov] [-g|-nog] [-u user] [-c cgipat] [-t throttles] [-h host] [-l logfile] [-i pidfile] [-T charset] [-P P3P] [-M maxage] [-V] [-D|-noD]\n",
 	argv0 );
     exit( 1 );
     }
@@ -1045,8 +1047,8 @@ read_config( char* filename )
 	    /* Interpret. */
 	    if ( strcasecmp( name, "debug" ) == 0 )
 		{
-		no_value_required( name, value );
-		debug = 1;
+		value_required( name, value );
+		debug = !! atoi(value);
 		}
 		else if (strcasecmp(name, "altdir")==0)
 		{
