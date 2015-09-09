@@ -2329,24 +2329,22 @@ httpd_parse_request( httpd_conn* hc )
     /* Expand all symbolic links in the filename.  This also gives us
     ** any trailing non-existing components, for pathinfo.
     */
-	if (!(
-		(hc->expnfilename[0]=='.' || hc->expnfilename[0]=='/') && hc->expnfilename[1]==0
-		))
+	cp = expand_symlinks( hc->expnfilename, &pi, hc->hs->no_symlink_check, hc->tildemapped );
+	if (!cp || pi[0])
 	{
 		while (get_altdir(&i, &altdir))
 		{
 			sprintf(temp, "%s/%s", altdir, hc->expnfilename);
 			cp = expand_symlinks(temp, &pi, hc->hs->no_symlink_check, 1);
-			if (cp && pi[0]==0) goto found_file;
+			if (cp && pi[0]==0) break;
 		}
 	}
-	cp = expand_symlinks( hc->expnfilename, &pi, hc->hs->no_symlink_check, hc->tildemapped );
 	if ( cp == (char*) 0 )
 	{
 		httpd_send_err( hc, 500, err500title, "", err500form, hc->encodedurl );
 		return -1;
 	}
-found_file:;
+
     httpd_realloc_str( &hc->expnfilename, &hc->maxexpnfilename, strlen( cp ) );
     (void) strcpy( hc->expnfilename, cp );
     httpd_realloc_str( &hc->pathinfo, &hc->maxpathinfo, strlen( pi ) );
