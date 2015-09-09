@@ -81,7 +81,7 @@ static int cgi_limit;
 static char* url_pattern;
 static int no_empty_referrers;
 static char* local_pattern;
-static char* logfile = "-";
+static char* logfile;
 static char* throttlefile;
 static char* hostname;
 static char* pidfile;
@@ -875,7 +875,7 @@ parse_args( int argc, char** argv )
     local_pattern = (char*) 0;
     throttlefile = (char*) 0;
     hostname = (char*) 0;
-    logfile = (char*) 0;
+    logfile = (char*)"-";
     pidfile = (char*) 0;
     user = DEFAULT_USER;
     charset = DEFAULT_CHARSET;
