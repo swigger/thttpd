@@ -2223,10 +2223,10 @@ int get_altdir(int * i, char ** os)
 {
 	int alln = (int)(paltdirs - altdirs);
 	if (*i<0 || *i>=alln)
-		*i = alln-1;
+		*i = 0;
 	else
-		-- *i;
-	if (*i < 0) return 0;
+		++ *i;
+	if (*i<0 || *i>=alln) return 0;
 	*os = altdirs[*i];
 	return 1;
 }
