@@ -528,7 +528,7 @@ main( int argc, char** argv )
 	** process.
 	*/
 #ifdef HAVE_SETSID
-        (void) setsid();
+        //(void) setsid();
 #endif /* HAVE_SETSID */
 	}
 
